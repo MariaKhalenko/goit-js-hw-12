@@ -9,17 +9,19 @@ const searchBox = document.querySelector('.search-box');
 const galleryImage = document.querySelector('.gallery');
 const loader = document.querySelector('.loader');
 const loadMoreBtn = document.querySelector('.load-btn')
+const loaderEnd = document.querySelector('.loader-more')
 
 const BASE_URL = 'https://pixabay.com/api';
 const API_KEY = '23963114-6d0d5d874ae460d9125bacd21';
 
 loader.style.display = 'none';
 loadMoreBtn.style.display = 'none';
+loaderEnd.style.display = 'none';
 
-let currentPage = 1;
+let page = 1;
 let totalHits = 0;
-let page = 1; 
 const perPage = 40;
+let originalQuery = ''; 
 
 formSearch.addEventListener('submit', async function (event) {
   event.preventDefault();
@@ -33,6 +35,7 @@ formSearch.addEventListener('submit', async function (event) {
     });
     return;
   }   
+   originalQuery = query;
   loadMoreBtn.style.display = 'none';
    loader.style.display = 'block';
 
@@ -56,65 +59,70 @@ formSearch.addEventListener('submit', async function (event) {
     
   }
       
-   if (images.length === 40) {
-    loadMoreBtn.style.display = 'block';
-  } else {
-    
-    loadMoreBtn.style.display = 'none';
-    showEndMessage();
-  }
-   
-   loadMoreBtn.addEventListener("click", async () => {
-  try {
-    const img = await fetchPosts();
-    renderPosts(img);
-    page += 1;
-  } catch (error) {
-    console.log(error);
-  }
-});
-   
-   
-  const markup = createMarkup(images);
+   const markup = createMarkup(images);
    galleryImage.innerHTML = markup;
+   loadMoreBtn.style.display = 'block';
   
    clearSearch.refresh();
-   window.scrollBy({ top: cardHeight * 2, behavior: 'smooth' });
-   }
+  }
   formSearch.reset();
    
-  
+
  try {
-    const response = await axios.get(`${BASE_URL}/?key=${API_KEY}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${currentPage}&per_page=40`);
+    const response = await axios.get(`${BASE_URL}/?key=${API_KEY}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${page}&per_page=40`);
    totalHits = response.data.totalHits;
    displayImages(response.data.hits);
   } catch (error) {
     console.error(error);
      } finally {
    loader.style.display = 'none';
-   currentPage++;
   } 
     });
 
+loadMoreBtn.addEventListener("click", async () => {
+  try {
+   loaderEnd.style.display = 'block';
+    const query = encodeURIComponent(originalQuery.trim());
+    page++;
+    const response = await axios.get(`${BASE_URL}/?key=${API_KEY}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${page}&per_page=40`);
+    totalHits = response.data.totalHits;
+    const newImages = response.data.hits;
+    const totalPages = Math.ceil(totalHits / perPage);
 
+    if (totalHits > 0 && page > totalPages) {
+      iziToast.info({
+        title: 'Info',
+        message: "We're sorry, but you've reached the end of search results.",
+      });
+      return;
+    }
 
+    const markup = createMarkup(newImages);
+    galleryImage.insertAdjacentHTML('beforeend', markup);
 
-
-
-
-
-
-
-
-
-
-function showEndMessage() {
-  iziToast.info({
-    title: 'Info',
-    message: "We're sorry, but you've reached the end of search results.",
+    const clearSearch = new SimpleLightbox('.gallery a', {
+    captionsData: 'alt',
+    captions: true,
+    captionDelay: 250,
   });
-}
 
+   
+    clearSearch.refresh();
+    } catch (error) {
+    console.error(error);
+  } finally {
+    loaderEnd.style.display = 'none';
+
+    const cardHeight = getGalleryCardHeight();
+    window.scrollBy({
+    top: cardHeight*2,
+    left: 0,
+    behavior: "smooth",
+});
+   }
+});
+
+  
 function getGalleryCardHeight() {
   const galleryItem = document.querySelector('.gallery-item');
   const cardHeight = galleryItem.getBoundingClientRect().height;
