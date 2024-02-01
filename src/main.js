@@ -22,6 +22,7 @@ let page = 1;
 let totalHits = 0;
 const perPage = 40;
 let originalQuery = ''; 
+const clearSearch = lightbox();
 
 formSearch.addEventListener('submit', async function (event) {
   event.preventDefault();
@@ -35,15 +36,12 @@ formSearch.addEventListener('submit', async function (event) {
     });
     return;
   }   
-   originalQuery = query;
+  originalQuery = query;
+  page = 1; 
   loadMoreBtn.style.display = 'none';
    loader.style.display = 'block';
 
-   const clearSearch = new SimpleLightbox('.gallery a', {
-    captionsData: 'alt',
-    captions: true,
-    captionDelay: 250,
-  });
+   lightbox();
 
  function displayImages(images) {
   galleryImage.innerHTML = '';
@@ -56,7 +54,6 @@ formSearch.addEventListener('submit', async function (event) {
         'Sorry, there are no images matching your search query. Please try again!',
     });
     return;
-    
   }
       
    const markup = createMarkup(images);
@@ -74,6 +71,10 @@ formSearch.addEventListener('submit', async function (event) {
    displayImages(response.data.hits);
   } catch (error) {
     console.error(error);
+    iziToast.warning({
+    title: 'Error',
+    message: 'Something went wrong',
+});
      } finally {
    loader.style.display = 'none';
   } 
@@ -100,16 +101,15 @@ loadMoreBtn.addEventListener("click", async () => {
     const markup = createMarkup(newImages);
     galleryImage.insertAdjacentHTML('beforeend', markup);
 
-    const clearSearch = new SimpleLightbox('.gallery a', {
-    captionsData: 'alt',
-    captions: true,
-    captionDelay: 250,
-  });
+    lightbox();
 
-   
     clearSearch.refresh();
     } catch (error) {
     console.error(error);
+    iziToast.warning({
+    title: 'Error',
+    message: 'Something went wrong',
+});
   } finally {
     loaderEnd.style.display = 'none';
 
@@ -122,6 +122,22 @@ loadMoreBtn.addEventListener("click", async () => {
    }
 });
 
+const scrollButton = document.querySelector('.scroll-to-top-btn');
+
+window.addEventListener('scroll', function () {
+  if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+    scrollButton.style.display = 'block';
+  } else {
+    scrollButton.style.display = 'none';
+  }
+});
+scrollButton.addEventListener('click', function () {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+});
+
   
 function getGalleryCardHeight() {
   const galleryItem = document.querySelector('.gallery-item');
@@ -129,7 +145,14 @@ function getGalleryCardHeight() {
   return cardHeight;
 }
 
-
+function lightbox() {
+   const clearSearch = new SimpleLightbox('.gallery a', {
+    captionsData: 'alt',
+    captions: true,
+    captionDelay: 250,
+  });
+  return clearSearch;
+}
 
 function createMarkup(images) {
   return images.map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) =>
@@ -163,3 +186,5 @@ function createMarkup(images) {
         </li>`)
     .join('');
 }
+
+  
