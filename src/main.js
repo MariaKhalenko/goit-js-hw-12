@@ -22,7 +22,7 @@ let page = 1;
 let totalHits = 0;
 const perPage = 40;
 let originalQuery = ''; 
-const clearSearch = lightbox();
+const lightboxSearch = lightbox();
 
 formSearch.addEventListener('submit', async function (event) {
   event.preventDefault();
@@ -60,7 +60,7 @@ formSearch.addEventListener('submit', async function (event) {
    galleryImage.innerHTML = markup;
    loadMoreBtn.style.display = 'block';
   
-   clearSearch.refresh();
+   lightboxSearch.refresh();
   }
   formSearch.reset();
    
@@ -69,6 +69,17 @@ formSearch.addEventListener('submit', async function (event) {
     const response = await axios.get(`${BASE_URL}/?key=${API_KEY}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${page}&per_page=40`);
    totalHits = response.data.totalHits;
    displayImages(response.data.hits);
+
+   if (totalHits > 0 && totalHits <= perPage) {
+     iziToast.info({
+       title: 'Info',
+       message: "We're sorry, but you've reached the end of search results.",
+     });
+      loadMoreBtn.style.display = 'none';
+     return;
+    }
+
+
   } catch (error) {
     console.error(error);
     iziToast.warning({
@@ -94,8 +105,10 @@ loadMoreBtn.addEventListener("click", async () => {
       iziToast.info({
         title: 'Info',
         message: "We're sorry, but you've reached the end of search results.",
-      });
+      })
+     loadMoreBtn.style.display = 'none';
       return;
+      
     }
 
     const markup = createMarkup(newImages);
@@ -103,7 +116,7 @@ loadMoreBtn.addEventListener("click", async () => {
 
     lightbox();
 
-    clearSearch.refresh();
+    lightboxSearch.refresh();
     } catch (error) {
     console.error(error);
     iziToast.warning({
@@ -146,12 +159,12 @@ function getGalleryCardHeight() {
 }
 
 function lightbox() {
-   const clearSearch = new SimpleLightbox('.gallery a', {
+   const lightboxSearch = new SimpleLightbox('.gallery a', {
     captionsData: 'alt',
     captions: true,
     captionDelay: 250,
   });
-  return clearSearch;
+  return lightboxSearch;
 }
 
 function createMarkup(images) {
@@ -186,5 +199,3 @@ function createMarkup(images) {
         </li>`)
     .join('');
 }
-
-  
